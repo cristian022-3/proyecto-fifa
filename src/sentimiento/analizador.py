@@ -8,6 +8,41 @@ MODELO_PATH = os.getenv("MODELO_HF", "Cristian022/proyecto-fifa-sentimiento")
 ETIQUETAS = {0: "negativo", 1: "neutral", 2: "positivo"}
 MAX_LENGTH = 128
 
+# Palabras claramente positivas en contexto futbolístico
+PALABRAS_POSITIVAS = [
+    "golazo", "campeones", "campeon", "ganamos", "ganaron", "victoria",
+    "gol", "clasificamos", "clasificaron", "brillante", "increible",
+    "espectacular", "historico", "partidazo", "crack", "tremendo",
+    "vamos", "arriba", "excelente", "genial", "fenomenal"
+]
+
+# Palabras claramente negativas en contexto futbolístico
+PALABRAS_NEGATIVAS = [
+    "robo", "vergüenza", "verguenza", "eliminados", "perdimos",
+    "perdieron", "fracaso", "desastre", "horrible", "injusto",
+    "arbitro vendido", "mal arbitraje", "expulsado injusto",
+    "pateticos", "decepcion", "derrota", "humillacion"
+]
+
+def detectar_sentimiento_por_palabras(texto):
+    """Detecta sentimiento basado en palabras clave para casos simples."""
+    texto_lower = texto.lower()
+    palabras = texto_lower.split()
+    
+    puntos_positivos = sum(1 for p in PALABRAS_POSITIVAS if p in texto_lower)
+    puntos_negativos = sum(1 for p in PALABRAS_NEGATIVAS if p in texto_lower)
+    
+    # Solo usar detección por palabras si hay señal clara y texto corto
+    if len(palabras) <= 4:
+        if puntos_positivos > puntos_negativos:
+            return "positivo", 0.75
+        elif puntos_negativos > puntos_positivos:
+            return "negativo", 0.75
+        else:
+            return None, None
+    
+    return None, None
+
 def preprocesar_texto(texto):
     """Maneja negaciones comunes en español."""
     negaciones = {
@@ -17,7 +52,10 @@ def preprocesar_texto(texto):
         "no está mal": "está bien",
         "no estuvo tan mal": "estuvo bien",
         "nada mal": "bastante bien",
-        "no tan malo": "aceptable"
+        "no tan malo": "aceptable",
+        "mal tiro": "tiro fallado fracaso",
+        "jugaron mal": "mal rendimiento fracaso",
+        "jugamos mal": "mal rendimiento fracaso",
     }
     texto_lower = texto.lower()
     for negacion, reemplazo in negaciones.items():
@@ -39,6 +77,23 @@ class AnalizadorSentimiento:
 
     def analizar(self, texto):
         """Analiza el sentimiento de un comentario."""
+        
+        # Para textos muy cortos usar detección por palabras clave
+        etiqueta_rapida, confianza_rapida = detectar_sentimiento_por_palabras(texto)
+        if etiqueta_rapida:
+            idx = list(ETIQUETAS.values()).index(etiqueta_rapida)
+            probs = [0.1, 0.1, 0.1]
+            probs[idx] = confianza_rapida
+            return {
+                "etiqueta": etiqueta_rapida,
+                "confianza": confianza_rapida,
+                "probabilidades": {
+                    "negativo": probs[0],
+                    "neutral": probs[1],
+                    "positivo": probs[2]
+                }
+            }
+        
         texto = preprocesar_texto(texto)
         encoding = self.tokenizador(
             texto,
