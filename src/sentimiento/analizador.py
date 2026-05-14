@@ -1,12 +1,12 @@
 import os
-import requests
+import torch
 import numpy as np
+from transformers import AutoTokenizer, AutoModelForSequenceClassification
 
 # ── Configuración ──────────────────────────────────────────
-MODELO_HF = os.getenv("MODELO_HF", "Cristian022/proyecto-fifa-sentimiento")
-HF_TOKEN = os.getenv("HF_TOKEN", "")
-API_URL = f"https://api-inference.huggingface.co/models/{MODELO_HF}"
+MODELO_PATH = os.getenv("MODELO_HF", "Cristian022/proyecto-fifa-sentimiento")
 ETIQUETAS = {0: "negativo", 1: "neutral", 2: "positivo"}
+MAX_LENGTH = 128
 
 def preprocesar_texto(texto):
     """Maneja negaciones comunes en español."""
@@ -27,84 +27,57 @@ def preprocesar_texto(texto):
 
 class AnalizadorSentimiento:
     def __init__(self):
-        print("Iniciando AnalizadorSentimiento via API de HuggingFace...")
-        self.headers = {}
-        if HF_TOKEN:
-            self.headers["Authorization"] = f"Bearer {HF_TOKEN}"
-        print("Analizador listo.")
+        print("Cargando modelo de sentimiento desde HuggingFace...")
+        self.device = torch.device("cpu")
+        self.tokenizador = AutoTokenizer.from_pretrained(MODELO_PATH)
+        self.modelo = AutoModelForSequenceClassification.from_pretrained(
+            MODELO_PATH,
+            low_cpu_mem_usage=True
+        )
+        self.modelo.eval()
+        print(f"Modelo cargado en: {self.device}")
 
     def analizar(self, texto):
-        """Analiza el sentimiento usando la API de HuggingFace."""
+        """Analiza el sentimiento de un comentario."""
         texto = preprocesar_texto(texto)
-        
-        try:
-            respuesta = requests.post(
-                API_URL,
-                headers=self.headers,
-                json={"inputs": texto},
-                timeout=30
+        encoding = self.tokenizador(
+            texto,
+            max_length=MAX_LENGTH,
+            padding="max_length",
+            truncation=True,
+            return_tensors="pt"
+        )
+
+        input_ids = encoding["input_ids"].to(self.device)
+        attention_mask = encoding["attention_mask"].to(self.device)
+
+        with torch.no_grad():
+            outputs = self.modelo(
+                input_ids=input_ids,
+                attention_mask=attention_mask
             )
-            
-            if respuesta.status_code == 503:
-                # Modelo cargando, esperar
-                return self._respuesta_error("Modelo cargando, intenta de nuevo en 20 segundos")
-            
-            resultado = respuesta.json()
-            
-            if isinstance(resultado, list) and len(resultado) > 0:
-                if isinstance(resultado[0], list):
-                    scores = resultado[0]
-                else:
-                    scores = resultado
-                
-                # Mapear etiquetas del modelo a nuestras etiquetas
-                probs = {"negativo": 0.0, "neutral": 0.0, "positivo": 0.0}
-                
-                for item in scores:
-                    label = item.get("label", "").lower()
-                    score = item.get("score", 0.0)
-                    
-                    if "neg" in label or label == "0" or label == "negativo":
-                        probs["negativo"] = score
-                    elif "neu" in label or label == "1" or label == "neutral":
-                        probs["neutral"] = score
-                    elif "pos" in label or label == "2" or label == "positivo":
-                        probs["positivo"] = score
 
-                # Umbral ajustado para positivos
-                UMBRAL_POSITIVO = 0.40
-                if probs["positivo"] >= UMBRAL_POSITIVO:
-                    prediccion = "positivo"
-                elif probs["negativo"] >= probs["neutral"]:
-                    prediccion = "negativo"
-                else:
-                    prediccion = "neutral"
+        logits = outputs.logits
+        probabilidades = torch.softmax(logits, dim=1).cpu().numpy()[0]
 
-                confianza = probs[prediccion]
+        UMBRAL_POSITIVO = 0.40
+        if probabilidades[2] >= UMBRAL_POSITIVO:
+            prediccion = 2
+        elif probabilidades[0] >= probabilidades[1]:
+            prediccion = 0
+        else:
+            prediccion = 1
 
-                return {
-                    "etiqueta": prediccion,
-                    "confianza": confianza,
-                    "probabilidades": probs
-                }
-            else:
-                return self._respuesta_error("Error en respuesta de API")
-                
-        except Exception as e:
-            print(f"Error en API: {e}")
-            return self._respuesta_error(str(e))
+        etiqueta = ETIQUETAS[prediccion]
 
-    def _respuesta_error(self, mensaje):
-        """Retorna respuesta de error estándar."""
         return {
-            "etiqueta": "neutral",
-            "confianza": 0.0,
+            "etiqueta": etiqueta,
+            "confianza": float(probabilidades[prediccion]),
             "probabilidades": {
-                "negativo": 0.0,
-                "neutral": 1.0,
-                "positivo": 0.0
-            },
-            "error": mensaje
+                "negativo": float(probabilidades[0]),
+                "neutral": float(probabilidades[1]),
+                "positivo": float(probabilidades[2])
+            }
         }
 
     def analizar_lote(self, textos):
