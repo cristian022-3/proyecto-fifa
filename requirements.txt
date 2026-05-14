@@ -17,3 +17,4 @@ datasets>=3.5.0
 accelerate>=1.6.0
 python-dotenv>=1.1.0
 google-api-python-client>=2.170.0
+pymupdf>=1.24.0
