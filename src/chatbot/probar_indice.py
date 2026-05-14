@@ -16,9 +16,11 @@ modelo = SentenceTransformer(
 
 # Preguntas de prueba
 preguntas = [
-    "¿Puede un portero anotar un gol con la mano?",
+    "¿Cuántos cambios puede hacer un equipo en un partido?",
+    "¿Puede un portero anotar gol con la mano?",
     "¿Qué es el fuera de juego?",
-    "¿Cuándo se cobra un penal?"
+    "¿Cuánto dura un partido?",
+    "¿Cuál es la receta del arroz con leche?"
 ]
 
 print("\n" + "="*50)

@@ -1,6 +1,6 @@
 import os
 import pickle
-import pdfplumber
+import fitz  # pymupdf
 from sentence_transformers import SentenceTransformer
 import faiss
 import numpy as np
@@ -15,17 +15,9 @@ CHUNK_SIZE = 400
 CHUNK_OVERLAP = 50
 
 def limpiar_texto(texto):
-    """Limpia caracteres extraños del PDF."""
-    import re
+    """Limpia el texto extraído del PDF."""
     # Eliminar caracteres no imprimibles
     texto = re.sub(r'[^\x20-\x7E\xC0-\xFF\u00C0-\u024F\n]', ' ', texto)
-    # Corregir solo consonantes duplicadas que no son válidas en español
-    # (no tocar ll, rr, cc, que son válidas)
-    pares_invalidos = ['bb','dd','ff','gg','hh','jj','kk','mm',
-                       'nn','pp','qq','ss','tt','vv','ww','xx',
-                       'yy','zz','aa','ee','ii','oo','uu']
-    for par in pares_invalidos:
-        texto = re.sub(par, par[0], texto)
     # Eliminar múltiples espacios
     texto = re.sub(r' +', ' ', texto)
     # Eliminar múltiples saltos de línea
@@ -34,38 +26,23 @@ def limpiar_texto(texto):
     lineas = texto.split('\n')
     lineas_limpias = [l for l in lineas if len(l.strip()) > 10]
     return '\n'.join(lineas_limpias)
-def es_chunk_valido(chunk):
-    """Verifica que el chunk no tenga texto corrupto."""
-    import re
-    # Detectar patrones de texto corrupto
-    # Letras mezcladas con mayúsculas en medio de palabra
-    patron_corrupto = re.compile(r'[a-z][A-Z][a-z]')
-    # Palabras con consonantes triplicadas
-    patron_triple = re.compile(r'([bcdfghjklmnpqrstvwxyz])\1\1')
-    # Espacios dentro de palabras normales
-    patron_espacios = re.compile(r'\b\w\s\w\s\w\b')
-    
-    if patron_corrupto.search(chunk):
-        return False
-    if patron_triple.search(chunk):
-        return False
-    if len(re.findall(r'[A-Z]', chunk)) > len(chunk) * 0.15:
-        return False
-    return True
 
 def extraer_texto_pdf(ruta_pdf):
-    """Extrae texto limpio del PDF usando pdfplumber."""
+    """Extrae texto usando pymupdf con mejor manejo de codificación."""
     print(f"Leyendo PDF: {ruta_pdf}")
     texto_completo = ""
     
-    with pdfplumber.open(ruta_pdf) as pdf:
-        total_paginas = len(pdf.pages)
-        for i, pagina in enumerate(pdf.pages):
-            texto = pagina.extract_text()
-            if texto:
-                texto_completo += texto + "\n"
-            print(f"  Página {i+1}/{total_paginas} procesada", end="\r")
+    doc = fitz.open(ruta_pdf)
+    total_paginas = len(doc)
     
+    for i, pagina in enumerate(doc):
+        # Extraer texto con pymupdf
+        texto = pagina.get_text("text")
+        if texto:
+            texto_completo += texto + "\n"
+        print(f"  Página {i+1}/{total_paginas} procesada", end="\r")
+    
+    doc.close()
     texto_limpio = limpiar_texto(texto_completo)
     print(f"\nTexto extraído: {len(texto_limpio)} caracteres")
     return texto_limpio
@@ -79,7 +56,7 @@ def crear_chunks(texto, chunk_size=CHUNK_SIZE, overlap=CHUNK_OVERLAP):
     while inicio < len(palabras):
         fin = inicio + chunk_size
         chunk = " ".join(palabras[inicio:fin])
-        if len(chunk.strip()) > 50 and es_chunk_valido(chunk):
+        if len(chunk.strip()) > 50:
             chunks.append(chunk)
         inicio += chunk_size - overlap
     
@@ -121,7 +98,7 @@ def guardar_resultados(indice, chunks):
 
 def main():
     print("=" * 50)
-    print("PROCESANDO REGLAMENTO FIFA (versión mejorada)")
+    print("PROCESANDO REGLAMENTO FIFA (pymupdf)")
     print("=" * 50)
     
     texto = extraer_texto_pdf(PDF_PATH)
