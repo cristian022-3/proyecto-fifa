@@ -16,8 +16,8 @@ modelo = SentenceTransformer(
 
 # Preguntas de prueba
 preguntas = [
+    "¿Puede un portero anotar un gol con la mano?",
     "¿Qué es el fuera de juego?",
-    "¿Cuánto dura un partido de fútbol?",
     "¿Cuándo se cobra un penal?"
 ]
 

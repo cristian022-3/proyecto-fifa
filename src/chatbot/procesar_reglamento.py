@@ -16,16 +16,42 @@ CHUNK_OVERLAP = 50
 
 def limpiar_texto(texto):
     """Limpia caracteres extraños del PDF."""
+    import re
     # Eliminar caracteres no imprimibles
     texto = re.sub(r'[^\x20-\x7E\xC0-\xFF\u00C0-\u024F\n]', ' ', texto)
+    # Corregir solo consonantes duplicadas que no son válidas en español
+    # (no tocar ll, rr, cc, que son válidas)
+    pares_invalidos = ['bb','dd','ff','gg','hh','jj','kk','mm',
+                       'nn','pp','qq','ss','tt','vv','ww','xx',
+                       'yy','zz','aa','ee','ii','oo','uu']
+    for par in pares_invalidos:
+        texto = re.sub(par, par[0], texto)
     # Eliminar múltiples espacios
     texto = re.sub(r' +', ' ', texto)
     # Eliminar múltiples saltos de línea
     texto = re.sub(r'\n{3,}', '\n\n', texto)
-    # Eliminar líneas muy cortas que son ruido
+    # Eliminar líneas muy cortas
     lineas = texto.split('\n')
     lineas_limpias = [l for l in lineas if len(l.strip()) > 10]
     return '\n'.join(lineas_limpias)
+def es_chunk_valido(chunk):
+    """Verifica que el chunk no tenga texto corrupto."""
+    import re
+    # Detectar patrones de texto corrupto
+    # Letras mezcladas con mayúsculas en medio de palabra
+    patron_corrupto = re.compile(r'[a-z][A-Z][a-z]')
+    # Palabras con consonantes triplicadas
+    patron_triple = re.compile(r'([bcdfghjklmnpqrstvwxyz])\1\1')
+    # Espacios dentro de palabras normales
+    patron_espacios = re.compile(r'\b\w\s\w\s\w\b')
+    
+    if patron_corrupto.search(chunk):
+        return False
+    if patron_triple.search(chunk):
+        return False
+    if len(re.findall(r'[A-Z]', chunk)) > len(chunk) * 0.15:
+        return False
+    return True
 
 def extraer_texto_pdf(ruta_pdf):
     """Extrae texto limpio del PDF usando pdfplumber."""
@@ -53,7 +79,7 @@ def crear_chunks(texto, chunk_size=CHUNK_SIZE, overlap=CHUNK_OVERLAP):
     while inicio < len(palabras):
         fin = inicio + chunk_size
         chunk = " ".join(palabras[inicio:fin])
-        if len(chunk.strip()) > 50:
+        if len(chunk.strip()) > 50 and es_chunk_valido(chunk):
             chunks.append(chunk)
         inicio += chunk_size - overlap
     
