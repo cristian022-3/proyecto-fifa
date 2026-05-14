@@ -40,17 +40,25 @@ def normalizar_pregunta(pregunta):
     return pregunta
 
 def buscar_en_cache(pregunta):
-    """Busca una respuesta instantánea en el caché."""
+    """Busca una respuesta instantánea en el caché con coincidencia estricta."""
     pregunta_norm = normalizar_pregunta(pregunta)
+    
+    # Coincidencia estricta — la clave completa debe estar en la pregunta
     for clave, respuesta in CACHE_PREGUNTAS.items():
-        if clave in pregunta_norm or any(
-            palabra in pregunta_norm 
-            for palabra in clave.split() 
-            if len(palabra) > 4
-        ):
-            return respuesta
+        palabras_clave = clave.split()
+        # Requiere que AL MENOS el 80% de las palabras clave estén presentes
+        palabras_encontradas = sum(
+            1 for palabra in palabras_clave 
+            if palabra in pregunta_norm and len(palabra) > 3
+        )
+        palabras_significativas = sum(1 for p in palabras_clave if len(p) > 3)
+        
+        if palabras_significativas > 0:
+            coincidencia = palabras_encontradas / palabras_significativas
+            if coincidencia >= 0.80:
+                return respuesta
+    
     return None
-
 class ChatbotFIFA:
     def __init__(self):
         print("Iniciando ChatbotFIFA...")
