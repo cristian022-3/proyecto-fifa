@@ -4,3 +4,6 @@ __pycache__/
 *.pyc
 *.pth
 modelo_sentimiento/
+modelos/mejor_modelo/model.safetensors
+modelos/mejor_modelo/tokenizer.json
+*.zip
