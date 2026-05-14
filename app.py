@@ -5,7 +5,15 @@ import plotly.express as px
 import plotly.graph_objects as go
 from dotenv import load_dotenv
 
-load_dotenv()
+import os
+
+# Cargar secretos desde Streamlit Cloud o .env local
+try:
+    import streamlit as st
+    os.environ["GROQ_API_KEY"] = st.secrets.get("GROQ_API_KEY", "")
+    os.environ["YOUTUBE_API_KEY"] = st.secrets.get("YOUTUBE_API_KEY", "")
+except:
+    load_dotenv()
 sys.path.append(".")
 
 # ── Configuración de la página ─────────────────────────────

@@ -7,3 +7,4 @@ modelo_sentimiento/
 modelos/mejor_modelo/model.safetensors
 modelos/mejor_modelo/tokenizer.json
 *.zip
+.streamlit/secrets.toml
