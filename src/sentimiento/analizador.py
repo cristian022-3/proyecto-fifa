@@ -3,7 +3,7 @@ import numpy as np
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 
 # ── Configuración ──────────────────────────────────────────
-MODELO_PATH = "modelos/mejor_modelo"
+MODELO_PATH = os.getenv("MODELO_HF", "Cristian022/proyecto-fifa-sentimiento")
 ETIQUETAS = {0: "negativo", 1: "neutral", 2: "positivo"}
 MAX_LENGTH = 128
 def preprocesar_texto(texto):
