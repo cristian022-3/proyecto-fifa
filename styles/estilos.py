@@ -5,6 +5,251 @@ Separados de la lógica para mejor mantenimiento.
 
 CSS_GLOBAL = """
 <style>
+/* ── ANIMACIONES ──────────────────────────────── */
+
+    /* Contador animado para estadísticas */
+    @keyframes countUp {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Entrada suave del hero */
+    @keyframes fadeInDown {
+        from { opacity: 0; transform: translateY(-30px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Entrada desde izquierda */
+    @keyframes fadeInLeft {
+        from { opacity: 0; transform: translateX(-30px); }
+        to { opacity: 1; transform: translateX(0); }
+    }
+
+    /* Pulso verde */
+    @keyframes glowPulse {
+        0%, 100% { box-shadow: 0 0 5px rgba(0,212,94,0.2); }
+        50% { box-shadow: 0 0 25px rgba(0,212,94,0.6), 0 0 50px rgba(0,212,94,0.2); }
+    }
+
+    /* Rotación del balón */
+    @keyframes rotateBall {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+
+    /* Línea de progreso animada */
+    @keyframes slideIn {
+        from { width: 0; }
+        to { width: 100%; }
+    }
+
+    /* Partículas flotantes */
+    @keyframes float {
+        0%, 100% { transform: translateY(0px) rotate(0deg); opacity: 0.3; }
+        50% { transform: translateY(-20px) rotate(180deg); opacity: 0.8; }
+    }
+
+    @keyframes float2 {
+        0%, 100% { transform: translateY(0px) rotate(45deg); opacity: 0.2; }
+        50% { transform: translateY(-15px) rotate(225deg); opacity: 0.6; }
+    }
+
+    /* Shimmer para cards */
+    @keyframes shimmer {
+        0% { background-position: -200% center; }
+        100% { background-position: 200% center; }
+    }
+
+    /* Typing cursor */
+    @keyframes blink {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0; }
+    }
+
+    /* ── APLICAR ANIMACIONES ──────────────────────── */
+
+    .hero-section {
+        animation: fadeInDown 0.8s ease forwards;
+    }
+
+    .hero-badge {
+        animation: fadeInLeft 0.6s ease 0.2s both;
+    }
+
+    .hero-title {
+        animation: fadeInLeft 0.6s ease 0.3s both;
+    }
+
+    .hero-subtitle {
+        animation: fadeInLeft 0.6s ease 0.4s both;
+    }
+
+    .stat-item:nth-child(1) { animation: countUp 0.6s ease 0.5s both; }
+    .stat-item:nth-child(2) { animation: countUp 0.6s ease 0.6s both; }
+    .stat-item:nth-child(3) { animation: countUp 0.6s ease 0.7s both; }
+    .stat-item:nth-child(4) { animation: countUp 0.6s ease 0.8s both; }
+
+    /* Cards con hover shimmer */
+    .card {
+        background: linear-gradient(
+            135deg,
+            var(--gris-oscuro) 0%,
+            #1a2128 50%,
+            var(--gris-oscuro) 100%
+        );
+        transition: all 0.3s ease;
+    }
+
+    .card:hover {
+        border-color: rgba(0, 212, 94, 0.4) !important;
+        transform: translateY(-3px);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.3), 0 0 20px rgba(0,212,94,0.05);
+    }
+
+    /* Botón con efecto de onda */
+    .stButton > button {
+        position: relative !important;
+        overflow: hidden !important;
+    }
+
+    .stButton > button::after {
+        content: '' !important;
+        position: absolute !important;
+        top: 50% !important; left: 50% !important;
+        width: 0 !important; height: 0 !important;
+        background: rgba(255,255,255,0.2) !important;
+        border-radius: 50% !important;
+        transform: translate(-50%, -50%) !important;
+        transition: width 0.4s, height 0.4s !important;
+    }
+
+    .stButton > button:active::after {
+        width: 200px !important;
+        height: 200px !important;
+    }
+
+    /* Resultado de sentimiento con animación */
+    .resultado-positivo, .resultado-negativo, .resultado-neutral {
+        animation: fadeInDown 0.4s ease forwards;
+    }
+
+    .resultado-positivo {
+        animation: fadeInDown 0.4s ease, glowPulse 3s ease-in-out infinite;
+    }
+
+    /* Tabs con transición */
+    .stTabs [data-baseweb="tab"] {
+        transition: all 0.3s ease !important;
+        position: relative !important;
+    }
+
+    .stTabs [data-baseweb="tab"]::after {
+        content: '' !important;
+        position: absolute !important;
+        bottom: 0 !important; left: 50% !important;
+        width: 0 !important; height: 3px !important;
+        background: var(--verde-fifa) !important;
+        transition: all 0.3s ease !important;
+        transform: translateX(-50%) !important;
+    }
+
+    .stTabs [data-baseweb="tab"]:hover::after {
+        width: 100% !important;
+    }
+
+    /* Section header con línea animada */
+    .section-header {
+        animation: fadeInLeft 0.5s ease forwards;
+    }
+
+    .section-header::after {
+        content: '';
+        display: block;
+        height: 1px;
+        background: linear-gradient(90deg, rgba(0,212,94,0.5), transparent);
+        animation: slideIn 0.8s ease 0.3s both;
+        margin-top: 1rem;
+    }
+
+    /* Métricas con brillo */
+    [data-testid="metric-container"] {
+        transition: all 0.3s ease !important;
+        position: relative !important;
+        overflow: hidden !important;
+    }
+
+    [data-testid="metric-container"]:hover {
+        border-color: rgba(0,212,94,0.3) !important;
+        transform: translateY(-2px) !important;
+        box-shadow: 0 8px 20px rgba(0,0,0,0.2) !important;
+    }
+
+    [data-testid="metric-container"]::before {
+        content: '' !important;
+        position: absolute !important;
+        top: 0 !important; left: -100% !important;
+        width: 100% !important; height: 100% !important;
+        background: linear-gradient(
+            90deg,
+            transparent,
+            rgba(0,212,94,0.05),
+            transparent
+        ) !important;
+        transition: left 0.5s ease !important;
+    }
+
+    [data-testid="metric-container"]:hover::before {
+        left: 100% !important;
+    }
+
+    /* Chat input animado */
+    .stChatInput {
+        transition: all 0.3s ease !important;
+    }
+
+    .stChatInput:focus-within {
+        border-color: rgba(0,212,94,0.5) !important;
+        box-shadow: 0 0 0 3px rgba(0,212,94,0.1) !important;
+    }
+
+    /* Chips de preguntas con hover */
+    .question-chip {
+        transition: all 0.2s ease !important;
+    }
+
+    .question-chip:hover {
+        transform: translateY(-2px) !important;
+        box-shadow: 0 4px 12px rgba(0,212,94,0.2) !important;
+    }
+
+    /* Source tag con pulso */
+    .source-tag {
+        animation: glowPulse 3s ease-in-out infinite;
+    }
+
+    /* Progress bar animada */
+    .stProgress > div {
+        transition: all 0.3s ease !important;
+    }
+
+    /* File uploader con hover */
+    [data-testid="stFileUploader"] {
+        transition: all 0.3s ease !important;
+    }
+
+    [data-testid="stFileUploader"]:hover {
+        border-color: rgba(0,212,94,0.4) !important;
+        background: rgba(0,212,94,0.03) !important;
+    }
+
+    /* Scrollbar animada */
+    ::-webkit-scrollbar-thumb {
+        transition: background 0.3s ease !important;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+        background: rgba(0,212,94,0.6) !important;
+    }
     @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;600&display=swap');
 
     :root {

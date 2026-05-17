@@ -28,6 +28,17 @@ st.markdown(CSS_GLOBAL, unsafe_allow_html=True)
 # ── Hero Section ───────────────────────────────────────────
 st.markdown("""
 <div class="hero-section">
+    <div style="position:absolute; top:20px; right:60px; font-size:5rem; 
+        animation: rotateBall 8s linear infinite; opacity:0.15;">⚽</div>
+    <div style="position:absolute; top:80px; right:200px; width:8px; height:8px;
+        background:var(--verde-fifa); border-radius:50%;
+        animation: float 4s ease-in-out infinite;"></div>
+    <div style="position:absolute; top:40px; right:300px; width:5px; height:5px;
+        background:var(--verde-fifa); border-radius:50%; opacity:0.5;
+        animation: float2 5s ease-in-out infinite;"></div>
+    <div style="position:absolute; bottom:30px; right:150px; width:6px; height:6px;
+        background:#FFD700; border-radius:50%; opacity:0.4;
+        animation: float 6s ease-in-out 1s infinite;"></div>
     <div class="hero-badge">⚡ Sistema IA Deportiva · IFAB 2025/26</div>
     <h1 class="hero-title">
         FIFA
